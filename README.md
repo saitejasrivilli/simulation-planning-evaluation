@@ -1,8 +1,8 @@
 # Simulation-Based Planning Evaluation
 
-This repository implements an evaluation-first framework for analyzing the **safety, robustness, and failure modes of embodied planning agents** in a continuous navigation environment.
+This repository implements an **evaluation-first framework** for analyzing the safety, robustness, and failure modes of embodied planning agents in a continuous navigation environment.
 
-Rather than optimizing for task success alone, the project focuses on **understanding when and why planners fail**, using adversarial geometry, risk-aware metrics, and failure taxonomy analysis. The emphasis is on evaluation methodology and causal insight, not benchmark chasing.
+Rather than optimizing for task success alone, the project focuses on **understanding when and why planners fail**, using adversarial geometry, risk-aware metrics, and structured failure analysis. The emphasis is on evaluation methodology and causal insight, not benchmark chasing.
 
 ---
 
@@ -30,9 +30,9 @@ The framework consists of five core components:
   - Grid-based A* planner with global reasoning  
 
 - **Scenarios**  
-  Procedurally generated environments including adversarial obstacle layouts (e.g., narrow corridors).
+  Procedurally generated environments including adversarial obstacle layouts such as narrow corridors.
 
-- **Evaluation & Metrics**  
+- **Evaluation and Metrics**  
   Risk-aware metrics including collision rate, success rate, step distributions, and conditional failure statistics.
 
 - **Analysis Pipeline**  
@@ -45,6 +45,7 @@ The system is intentionally modular to support controlled ablations and reproduc
 ## Key Experiments
 
 ### 1. Planner Comparison
+
 Planners are evaluated across hundreds of randomized episodes using identical initial conditions.
 
 Metrics include:
@@ -58,6 +59,7 @@ This reveals tradeoffs between **reactive efficiency** and **global safety guara
 ---
 
 ### 2. Robustness to Observation Noise
+
 Observation noise is injected into the planner state to test robustness.
 
 Findings:
@@ -68,16 +70,17 @@ Findings:
 ---
 
 ### 3. Adversarial Geometry Stress Testing
+
 Tight corridor scenarios are introduced to probe geometric feasibility limits.
 
-Key observation:
+Key observations:
 - There exists a regime where **no planner succeeds**, regardless of optimality
 - Failures are dominated by early collisions caused by execution–planning mismatch
 - Global planning advantages vanish under untrackable geometric constraints
 
 This highlights the distinction between:
-- **Feasible paths in configuration space**
-- **Trackable trajectories under continuous dynamics**
+- Feasible paths in configuration space
+- Trackable trajectories under continuous dynamics
 
 ---
 
@@ -105,14 +108,17 @@ A key result is the dominance of `CollisionEarly` in geometry-limited regimes, i
 
 ---
 
-## Limitations & Future Work
+## Limitations and Future Work
 
 This project intentionally does not implement:
 - Kinodynamic or curvature-aware planning
-- Learned planners
 - Clearance-aware cost functions
+- Learned planners beyond a simple behavior cloning baseline
 
 These are recognized as necessary extensions to overcome the identified failure regimes and are left as future work.
+
+---
+
 ## Evaluation Results
 
 ### Robustness to Observation Noise
@@ -120,10 +126,10 @@ These are recognized as necessary extensions to overcome the identified failure 
 The following plots show collision rate and success rate as a function of observation noise.  
 Despite increasing noise, planner behavior plateaus once execution feasibility dominates.
 
-**Collision Rate vs Noise**
+**Collision Rate vs Noise**  
 ![Collision vs Noise](figures/collision_vs_noise.png)
 
-**Success Rate vs Noise**
+**Success Rate vs Noise**  
 ![Success vs Noise](figures/success_vs_noise.png)
 
 ---
@@ -134,8 +140,25 @@ Distributional analysis reveals that failures are structured rather than random.
 
 The A* planner exhibits tight step-count distributions, indicating predictable behavior until geometric or execution constraints dominate.
 
-**A* Step Count CDF**
+**A* Step Count CDF**  
 ![AStar Steps CDF](figures/AStar_steps_cdf.png)
+
+---
+
+## Geometric Feasibility Boundary
+
+We vary corridor width while holding dynamics and planners fixed.
+
+Below a critical gap width (approximately **0.35**), all planners fail with probability 1.  
+Above this threshold, all planners succeed consistently.
+
+This reveals a sharp phase transition where **execution feasibility**, not planning optimality, dominates failure.
+
+**Phase Transition in Collision Probability**  
+![Phase Transition](figures/corridor_phase_transition.png)
+
+**Mean Collision Distance vs Corridor Width**  
+![Collision Distance vs Gap](figures/collision_distance_vs_gap.png)
 
 ---
 
