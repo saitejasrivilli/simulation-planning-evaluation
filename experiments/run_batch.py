@@ -1,4 +1,5 @@
 import numpy as np
+from planners.learned_planner.inference import LearnedPlanner
 
 from simulator.environment import Environment
 from planners.rule_based_planner import RuleBasedPlanner
@@ -9,8 +10,11 @@ from evaluation.evaluator import Evaluator
 def run_batch(planner_cls, num_episodes=500, seed=0):
     rng = np.random.default_rng(seed)
 
-    env = Environment()
+   
+    env = Environment(scenario_name="single")
+
     planner = planner_cls()
+    
     evaluator = Evaluator()
 
     all_metrics = []
@@ -47,9 +51,11 @@ def summarize(metrics):
 
 if __name__ == "__main__":
     planners = {
-        "RuleBased": RuleBasedPlanner,
-        "AStar": AStarPlanner
+    "RuleBased": RuleBasedPlanner,
+    "AStar": AStarPlanner,
+    "Learned": LearnedPlanner
     }
+
 
     results = {}
 

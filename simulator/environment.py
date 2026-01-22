@@ -1,14 +1,21 @@
 import numpy as np
+from scenarios.scenario_generator import generate
 
 
 class Environment:
-    def __init__(self, config=None):
+    def __init__(self, scenario_name="single", scenario_kwargs=None):
+        # Simulation parameters
         self.dt = 0.1
         self.max_speed = 1.0
         self.max_steps = 300
 
+        # Geometry
         self.agent_radius = 0.2
         self.goal_tolerance = 0.5
+
+        # Scenario config
+        self.scenario_name = scenario_name
+        self.scenario_kwargs = scenario_kwargs or {}
 
         self.reset()
 
@@ -20,30 +27,19 @@ class Environment:
         # Goal
         self.goal = np.array([4.0, 0.0])
 
-        # Obstacles (support multiple)
-        self.obstacles = [
-            {"center": np.array([0.0, 0.9]), "radius": 0.8},
-            {"center": np.array([0.0, -0.9]), "radius": 0.8},
-        ]
+        # Obstacles (from scenario generator)
+        self.obstacles = generate(self.scenario_name, **self.scenario_kwargs)
 
         # Episode bookkeeping
         self.steps = 0
         self.done = False
         self.collision = False
         self.reached_goal = False
+        self.collision_dist = None
 
         return self._get_state()
 
     def step(self, action):
-        """
-        Advance simulation by one timestep.
-
-        Args:
-            action: np.array of shape (2,) representing acceleration
-
-        Returns:
-            state, reward, done, info
-        """
         if self.done:
             raise RuntimeError("Episode already finished. Call reset().")
 
@@ -59,12 +55,13 @@ class Environment:
         self.position += self.velocity * self.dt
         self.steps += 1
 
-        # --- Collision check (multi-obstacle) ---
+        # --- Collision check ---
         for obs in self.obstacles:
             dist = np.linalg.norm(self.position - obs["center"])
             if dist <= (self.agent_radius + obs["radius"]):
                 self.collision = True
                 self.done = True
+                self.collision_dist = dist
                 break
 
         # --- Goal check ---
@@ -77,24 +74,20 @@ class Environment:
         if self.steps >= self.max_steps:
             self.done = True
 
-        reward = 0.0  # evaluation-first design
-
         info = {
             "collision": self.collision,
             "reached_goal": self.reached_goal,
             "steps": self.steps,
             "distance_to_goal": dist_to_goal,
+            "collision_distance": self.collision_dist,
         }
 
-        return self._get_state(), reward, self.done, info
+        return self._get_state(), 0.0, self.done, info
 
     def _get_state(self):
-        """
-        Return planner-observable state.
-        """
         return {
             "position": self.position.copy(),
             "velocity": self.velocity.copy(),
             "goal": self.goal.copy(),
-            "obstacles": self.obstacles,  # NEW: expose full obstacle list
+            "obstacles": self.obstacles,
         }

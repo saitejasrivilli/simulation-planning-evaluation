@@ -10,7 +10,14 @@ def plot_distributions(name, metrics):
     steps = np.array([m["steps"] for m in metrics])
     successes = np.array([m["goal_reached"] for m in metrics])
 
-    # ---------- Histogram ----------
+    collisions = np.array([m["collision"] for m in metrics])
+    collision_distances = np.array([
+        m["collision_distance"]
+        for m in metrics
+        if m["collision"] and m["collision_distance"] is not None
+    ])
+
+    # ---------- Steps Histogram ----------
     plt.figure()
     plt.hist(steps, bins=30, alpha=0.7)
     plt.xlabel("Steps")
@@ -20,7 +27,7 @@ def plot_distributions(name, metrics):
     plt.savefig(f"analysis/{name}_steps_hist.png")
     plt.close()
 
-    # ---------- CDF (Tail Risk) ----------
+    # ---------- Steps CDF ----------
     plt.figure()
     sorted_steps = np.sort(steps)
     cdf = np.arange(1, len(sorted_steps) + 1) / len(sorted_steps)
@@ -32,7 +39,7 @@ def plot_distributions(name, metrics):
     plt.savefig(f"analysis/{name}_steps_cdf.png")
     plt.close()
 
-    # ---------- Failure-conditioned ----------
+    # ---------- Failure-conditioned Steps ----------
     if (~successes).any():
         plt.figure()
         plt.hist(steps[~successes], bins=20, alpha=0.7)
@@ -43,11 +50,50 @@ def plot_distributions(name, metrics):
         plt.savefig(f"analysis/{name}_failure_steps.png")
         plt.close()
 
+    # ---------- Collision Distance Histogram ----------
+    if len(collision_distances) > 0:
+        plt.figure()
+        plt.hist(collision_distances, bins=20, alpha=0.7)
+        plt.axvline(
+            x=1.0,
+            linestyle="--",
+            color="gray",
+            alpha=0.6,
+            label="Collision boundary"
+        )
+        plt.xlabel("Collision Distance")
+        plt.ylabel("Count")
+        plt.title(f"{name}: Collision Distance Distribution")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f"analysis/{name}_collision_distance_hist.png")
+        plt.close()
+
+        # ---------- Collision Distance CDF ----------
+        plt.figure()
+        sorted_dists = np.sort(collision_distances)
+        cdf = np.arange(1, len(sorted_dists) + 1) / len(sorted_dists)
+        plt.plot(sorted_dists, cdf)
+        plt.axvline(
+            x=1.0,
+            linestyle="--",
+            color="gray",
+            alpha=0.6,
+            label="Collision boundary"
+        )
+        plt.xlabel("Collision Distance")
+        plt.ylabel("CDF")
+        plt.title(f"{name}: Collision Distance CDF")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f"analysis/{name}_collision_distance_cdf.png")
+        plt.close()
+
 
 if __name__ == "__main__":
     planners = {
         "RuleBased": RuleBasedPlanner,
-        "AStar": AStarPlanner
+        "AStar": AStarPlanner,
     }
 
     for name, planner_cls in planners.items():

@@ -3,14 +3,10 @@ from evaluation.metrics.task_success import goal_reached, steps_to_termination
 
 
 class Evaluator:
-    """
-    Computes evaluation metrics for a single episode.
-    """
-
     def evaluate_episode(self, info):
-        metrics = {
-            "collision": collision_occurred(info),
-            "goal_reached": goal_reached(info),
-            "steps": steps_to_termination(info)
+        return {
+            "collision": info["collision"],
+            "goal_reached": info["reached_goal"],
+            "steps": info["steps"],
+            "collision_distance": info.get("collision_distance"),
         }
-        return metrics
