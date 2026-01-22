@@ -113,6 +113,29 @@ This project intentionally does not implement:
 - Clearance-aware cost functions
 
 These are recognized as necessary extensions to overcome the identified failure regimes and are left as future work.
+## Evaluation Results
+
+### Robustness to Observation Noise
+
+The following plots show collision rate and success rate as a function of observation noise.  
+Despite increasing noise, planner behavior plateaus once execution feasibility dominates.
+
+**Collision Rate vs Noise**
+![Collision vs Noise](figures/collision_vs_noise.png)
+
+**Success Rate vs Noise**
+![Success vs Noise](figures/success_vs_noise.png)
+
+---
+
+### Risk and Failure Distributions
+
+Distributional analysis reveals that failures are structured rather than random.
+
+The A* planner exhibits tight step-count distributions, indicating predictable behavior until geometric or execution constraints dominate.
+
+**A* Step Count CDF**
+![AStar Steps CDF](figures/AStar_steps_cdf.png)
 
 ---
 
