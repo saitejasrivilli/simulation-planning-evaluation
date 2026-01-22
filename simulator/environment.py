@@ -1,9 +1,16 @@
 import numpy as np
+from collections import deque
 from scenarios.scenario_generator import generate
 
 
 class Environment:
-    def __init__(self, scenario_name="single", scenario_kwargs=None):
+    def __init__(
+        self,
+        scenario_name="single",
+        scenario_kwargs=None,
+        control_noise=0.0,
+        control_delay=0
+    ):
         # Simulation parameters
         self.dt = 0.1
         self.max_speed = 1.0
@@ -17,6 +24,11 @@ class Environment:
         self.scenario_name = scenario_name
         self.scenario_kwargs = scenario_kwargs or {}
 
+        # --- NEW: execution realism ---
+        self.control_noise = control_noise
+        self.control_delay = control_delay
+        self.action_buffer = deque(maxlen=control_delay + 1)
+
         self.reset()
 
     def reset(self):
@@ -27,7 +39,7 @@ class Environment:
         # Goal
         self.goal = np.array([4.0, 0.0])
 
-        # Obstacles (from scenario generator)
+        # Obstacles
         self.obstacles = generate(self.scenario_name, **self.scenario_kwargs)
 
         # Episode bookkeeping
@@ -37,16 +49,22 @@ class Environment:
         self.reached_goal = False
         self.collision_dist = None
 
+        # Reset action buffer
+        self.action_buffer.clear()
+
         return self._get_state()
 
-    def step(self, action):
+    def step(self, planned_action):
         if self.done:
             raise RuntimeError("Episode already finished. Call reset().")
 
-        action = np.clip(action, -1.0, 1.0)
+        planned_action = np.clip(planned_action, -1.0, 1.0)
 
-        # Update velocity
-        self.velocity += action * self.dt
+        # --- NEW: execution mismatch ---
+        executed_action = self._apply_control_noise_and_delay(planned_action)
+
+        # Update velocity using executed action
+        self.velocity += executed_action * self.dt
         speed = np.linalg.norm(self.velocity)
         if speed > self.max_speed:
             self.velocity = self.velocity / speed * self.max_speed
@@ -80,9 +98,28 @@ class Environment:
             "steps": self.steps,
             "distance_to_goal": dist_to_goal,
             "collision_distance": self.collision_dist,
+            # Optional but useful
+            "control_noise": self.control_noise,
+            "control_delay": self.control_delay,
         }
 
         return self._get_state(), 0.0, self.done, info
+
+    def _apply_control_noise_and_delay(self, action):
+        """
+        Models execution error: noise + delay.
+        Planner is unaware of this.
+        """
+        noisy_action = action + np.random.normal(
+            0.0, self.control_noise, size=action.shape
+        )
+
+        self.action_buffer.append(noisy_action)
+
+        if self.control_delay > 0 and len(self.action_buffer) > self.control_delay:
+            return self.action_buffer[0]
+
+        return noisy_action
 
     def _get_state(self):
         return {
